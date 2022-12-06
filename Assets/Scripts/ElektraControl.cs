@@ -7,6 +7,7 @@ public class ElektraControl : MonoBehaviour
     public AudioSource sourceELow;
     public AudioSource sourceEHigh;
     public AudioSource sourceBH;
+    public AudioSource sourceImplosion;
     public AudioClip vibrationClip;
 
     [SerializeField]
@@ -22,15 +23,15 @@ public class ElektraControl : MonoBehaviour
     [SerializeField]
     private float minDispSpeed = 0.005f;
     [SerializeField]
+    private float maxDispSpeed = 0.05f;
+    [SerializeField]
     private float minDispScale = 0.1f;
     [SerializeField]
-    private float minDispDetail = 22f;
+    private float maxDispScale = 1.5f;
     [SerializeField]
-    private float maxDispSpeed = 0.5f;
+    private float minDispDetail = 0.2f;
     [SerializeField]
-    private float maxDispScale = 1.2f;
-    [SerializeField]
-    private float maxDispDetail = 1f;
+    private float maxDispDetail = 360f;
     private float dispScaleIncrease;
     private float dispDetailIncrease;
     private float dispSpeedIncrease;
@@ -41,7 +42,7 @@ public class ElektraControl : MonoBehaviour
 
     [Header("Border Power")]
     [SerializeField]
-    private float minBorderPow = 0f;
+    private float minBorderPow = 1f;
     [SerializeField]
     private float maxBorderPow = 6f;
     private float borderPower;
@@ -52,6 +53,12 @@ public class ElektraControl : MonoBehaviour
     private bool canCharge = true;
     private float chargeFactor = 0.2f;
     private float dischargeFactor = 0.05f;
+
+    //-- Black Hole settings
+    private float bhBorderPower = -1.42f;
+    private float bhDispScale = -0.36f;
+    private float bhDispDetail = 55f;
+    private float bhDispSpeed = 0.05f;
 
     // public float ReloadTime = 1f; //-- seconds
     // private float ReloadTimer = 0; //-- seconds
@@ -93,16 +100,15 @@ public class ElektraControl : MonoBehaviour
                 // dispScaleIncrease = movFactor * helpers.Map(borderIncrease, minBorderPow, maxBorderPow, minDispScale, maxDispScale); //-- map from borderIncrease
                 // Debug.Log("dispScaleIncrease: " + dispScaleIncrease);
                 // dispScale += dispScaleIncrease;
-                material.SetFloat("Vector1_80680889906d48848eb8aa94785bcd56", dispScale);
-                dispDetailIncrease = movFactor * helpers.Map(borderIncrease, minBorderPow, maxBorderPow, minDispDetail, maxDispDetail); //-- map from borderIncrease
-                dispDetail += dispDetailIncrease;
+                // material.SetFloat("Vector1_80680889906d48848eb8aa94785bcd56", dispScale);
+                dispDetail = helpers.Map(borderPower, minBorderPow, maxBorderPow, minDispDetail, maxDispDetail);
                 material.SetFloat("_NoiseDetail", dispDetail);
-                dispSpeedIncrease = movFactor * helpers.Map(borderIncrease, minBorderPow, maxBorderPow, minDispSpeed, maxDispSpeed); //-- map from borderIncrease
-                dispSpeed += dispSpeedIncrease;
+                dispSpeed = helpers.Map(borderPower, minBorderPow, maxBorderPow, minDispSpeed, maxDispSpeed);
                 material.SetFloat("Vector1_127c288ab2604e2ea4bc1d830e541d9d", dispSpeed); //-- SurfaceMovementSpeed
 
                 //-- displace mesh (mapped to distance)
-                dispScale = helpers.Map(dist, 0f, distLimit, maxDispScale, minDispScale);
+                float normBorderPow = helpers.Map(borderPower, minBorderPow, maxBorderPow, 0.3f, 1f);
+                dispScale = normBorderPow * helpers.Map(dist, 0f, distLimit, maxDispScale, minDispScale);
                 material.SetFloat("Vector1_80680889906d48848eb8aa94785bcd56", dispScale);
                 // dispDetail = helpers.Map(dist, 0f, distLimit, maxDispDetail, minDispDetail);
                 // material.SetFloat("_NoiseDetail", dispDetail);
@@ -124,27 +130,37 @@ public class ElektraControl : MonoBehaviour
         {
             canCharge = false;
             //-- go blackhole
-            borderPower = -1.42f;
+            borderPower = bhBorderPower;
             material.SetFloat("Vector1_e862223f582d4b9e998ad4aa2179934d", borderPower);
-            dispScale = -0.36f;
+            dispScale = bhDispScale;
             material.SetFloat("Vector1_80680889906d48848eb8aa94785bcd56", dispScale);
-            dispDetail = 55f;
+            dispDetail = bhDispDetail;
             material.SetFloat("_NoiseDetail", dispDetail);
-            dispSpeed = 0.05f;
+            dispSpeed = bhDispSpeed;
             material.SetFloat("Vector1_127c288ab2604e2ea4bc1d830e541d9d", dispSpeed); //-- SurfaceMovementSpeed
 
+            sourceImplosion.Play();
             sourceBH.Play();
-            sourceELow.Stop();
+            // sourceELow.Stop();
             sourceEHigh.Stop();
         }
 
         if (!canCharge)
         {
-            if (borderPower <= 0)
+            if (borderPower <= 0f)
             {
                 //-- discharge
                 borderPower += Time.deltaTime * dischargeFactor;
                 material.SetFloat("Vector1_e862223f582d4b9e998ad4aa2179934d", borderPower);
+                dispDetail = helpers.Map(borderPower, -1.42f, 0f, 55f, minDispDetail);
+                material.SetFloat("_NoiseDetail", dispDetail);
+
+                sourceBH.volume = helpers.Map(borderPower, bhBorderPower, 0f, 1f, 0.2f);
+                float powFraction = bhBorderPower / 3f;
+                if (borderPower >= powFraction)
+                {
+                    sourceELow.volume = helpers.Map(borderPower, powFraction, 0f, 0f, 1f);
+                }
             }
             else
             {
@@ -157,7 +173,7 @@ public class ElektraControl : MonoBehaviour
                 dispSpeed = minDispSpeed;
                 material.SetFloat("Vector1_127c288ab2604e2ea4bc1d830e541d9d", dispSpeed); //-- SurfaceMovementSpeed
 
-                sourceELow.Play();
+                // sourceELow.Play();
                 sourceEHigh.Play();
                 sourceBH.Stop();
             }
