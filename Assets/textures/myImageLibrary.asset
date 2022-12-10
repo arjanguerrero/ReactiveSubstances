@@ -18,12 +18,12 @@ MonoBehaviour:
     m_Storage: []
   m_Images:
   - m_SerializedGuid:
-      m_GuidLow: 4959695762130045779
-      m_GuidHigh: 14053547081677680536
+      m_GuidLow: 5564952555789201525
+      m_GuidHigh: 8614863561812046522
     m_SerializedTextureGuid:
-      m_GuidLow: 1946697315435242386
-      m_GuidHigh: 15775657031371744219
-    m_Size: {x: 0.1, y: 0.1}
+      m_GuidLow: 17616452109402265195
+      m_GuidHigh: 2888023710281706504
+    m_Size: {x: 0.15, y: 0.15}
     m_SpecifySize: 1
-    m_Name: tracker
+    m_Name: descenter
     m_Texture: {fileID: 0}
